@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires Node.js 18+, network access, and an AppSkyline account (https://app.appskyline.com)
 metadata:
   author: Appskyline
-  version: '1.0.0'
+  version: '1.1.0'
   repository: https://github.com/appskyline/skills
 allowed-tools: Bash(appskyline:*) Bash(npx appskyline:*)
 ---
@@ -27,14 +27,26 @@ prints the copy of this guide matching it.
 
 ## Setup
 
+Two ways to authenticate; both persist in `~/.appskyline/`:
+
 ```bash
-appskyline login    # opens the browser to authorize; tokens land in ~/.appskyline/
-appskyline logout   # clears the stored session
+appskyline login               # interactive: choose browser or API key
+appskyline login --browser     # opens app.appskyline.com to authorize; stores session tokens
+appskyline login --with-key    # masked prompt for an API key secret; verified before storing
+appskyline logout              # clears the stored session and any stored key
 ```
 
-Every other command reuses the saved session and refreshes it automatically.
-A `401` error means the session is missing or expired — run `appskyline login`
-and retry.
+Headless agents skip `login` entirely: export `APPSKYLINE_API_KEY=<key secret>`
+and every command authenticates with it (create keys per app in the AppSkyline
+web UI; new keys default to read-only scopes). Precedence: a stored browser
+session wins over a stored key, which wins over the environment variable. The
+secret is never accepted as a command argument — prompt or environment only.
+
+Browser sessions refresh automatically. Without a terminal and without
+credentials, commands fail fast with exit code 1 and instructions on stderr —
+nothing ever opens a browser headlessly. A `401` means the session or key is
+missing, expired, or wrong: run `appskyline login` (or fix
+`APPSKYLINE_API_KEY`) and retry.
 
 ## Where to start
 
@@ -193,9 +205,24 @@ appskyline zapier-hooks delete <hookId>
 
 ## Output discipline
 
-List commands print terminal tables; `--json` returns raw JSON. When
-exploring, project instead of dumping — pipe through `jq` and keep only the
-fields you need:
+Every data subcommand accepts `--json`: real, parseable JSON on stdout — no
+colors, no ANSI escapes. Without the flag, output is for human reading.
+Mutations with `--json` print a small result object
+(`{ "ok": true, "id": … }`). Errors always go to stderr with exit code 1;
+in `--json` mode the error is a single JSON line
+(`{"error":{"message":…,"status":…}}`), so stdout stays parseable.
+
+`appskyline schema` prints the whole command tree (options, arguments,
+subcommands) as JSON — discover capabilities from it instead of scraping
+help text:
+
+```bash
+appskyline schema                   # the full command tree as JSON
+appskyline schema keywords list     # one subtree only
+```
+
+When exploring, project instead of dumping — pipe through `jq` and keep only
+the fields you need:
 
 ```bash
 appskyline apps list --json | jq '.[] | {id: ._id, name, iosAppStoreId}'
@@ -211,13 +238,15 @@ default `--appId`:
 ```
 
 `APPSKYLINE_API_URL` overrides the API endpoint — only needed when testing
-against a non-production deployment.
+against a non-production deployment. `APPSKYLINE_API_KEY` supplies an API key
+secret for headless auth (see Setup).
 
 ## Errors → remediation
 
 | Symptom                              | Fix                                                        |
 | ------------------------------------ | ---------------------------------------------------------- |
-| `401` on any command                 | `appskyline login`, then retry                             |
+| `401` on any command                 | `appskyline login` (or set `APPSKYLINE_API_KEY`), then retry |
+| `403` with an API key                | Key scopes too narrow — widen them in the AppSkyline web UI, or log in |
 | App not found / empty keyword list   | Wrong id kind — get the AppSkyline `appId` from `apps list` |
 | `metadata list` looks outdated       | It is a cache — run `metadata download <appId>` first      |
 | `reviews` / `installs` permission error | Service account not configured in the AppSkyline web UI |
