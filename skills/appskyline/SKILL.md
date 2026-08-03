@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires Node.js 18+, network access, and an AppSkyline account (https://app.appskyline.com)
 metadata:
   author: Appskyline
-  version: '1.1.0'
+  version: '1.2.0'
   repository: https://github.com/appskyline/skills
 allowed-tools: Bash(appskyline:*) Bash(npx appskyline:*)
 ---
@@ -27,7 +27,15 @@ prints the copy of this guide matching it.
 
 ## Setup
 
-Two ways to authenticate; both persist in `~/.appskyline/`:
+No account yet? Create one without leaving the terminal — the generated
+password prints exactly once, and the session is stored so every other
+command works immediately:
+
+```bash
+appskyline signup --email founder@example.com --json
+```
+
+Two ways to authenticate an existing account; both persist in `~/.appskyline/`:
 
 ```bash
 appskyline login               # interactive: choose browser or API key
