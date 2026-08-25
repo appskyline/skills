@@ -22,6 +22,7 @@ To install a single skill:
 ```bash
 npx skills add appskyline/skills@appskyline
 npx skills add appskyline/skills@aso-research
+npx skills add appskyline/skills@store-listing-audit
 ```
 
 ## Skills
@@ -30,6 +31,7 @@ npx skills add appskyline/skills@aso-research
 | -------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | [`appskyline`](skills/appskyline/SKILL.md)   | the [`appskyline` CLI](https://github.com/appskyline/cli) (npm) | Rankings, keyword research, metadata audits, and reviews from the shell — `npx appskyline`          |
 | [`aso-research`](skills/aso-research/SKILL.md) | the AppSkyline MCP connector (`https://mcp.appskyline.com/mcp`) | End-to-end ASO research through MCP tools in hosts like Claude, ChatGPT, Cursor, and Codex |
+| [`store-listing-audit`](skills/store-listing-audit/SKILL.md) | the AppSkyline MCP connector (`https://mcp.appskyline.com/mcp`) | Evidence-based store-listing and localization audits across all four supported stores |
 
 Both need an AppSkyline account with at least one tracked app —
 [sign up](https://app.appskyline.com), then `appskyline login` (CLI) or
