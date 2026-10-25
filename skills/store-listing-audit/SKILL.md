@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires the AppSkyline MCP connector (https://mcp.appskyline.com/mcp) and an AppSkyline account
 metadata:
   author: Appskyline
-  version: '1.0.0'
+  version: '1.0.1'
   repository: https://github.com/appskyline/skills
 ---
 
@@ -51,8 +51,10 @@ billable upstream research for uncached terms, so never loop over one term per
 request.
 
 Do not claim that a term has demand when the tool returned no volume. Do not
-equate high volume with relevance or achievable rank. Prefer a defensible mix
-of relevant terms, observed competitors, current rank, and measured demand.
+equate high volume with relevance or achievable rank. The volume is Google
+web-search demand in the selected country, a proxy for interest in the term,
+not a count of searches inside the store. Prefer a defensible mix of relevant
+terms, observed competitors, current rank, and measured demand.
 
 ## Audit each field
 

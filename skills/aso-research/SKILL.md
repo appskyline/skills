@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires the AppSkyline MCP connector (https://mcp.appskyline.com/mcp) and an AppSkyline account with at least one tracked app
 metadata:
   author: Appskyline
-  version: '1.1.0'
+  version: '1.1.1'
   repository: https://github.com/appskyline/skills
 ---
 
@@ -15,6 +15,13 @@ This guide drives the AppSkyline MCP connector. Every tool below is provided by
 that connector, so the user must have connected AppSkyline and be signed in to
 an account with access to at least one tracked app. If a tool call fails with an
 authorization error, tell the user to connect AppSkyline rather than retrying.
+
+## Interactive workspace
+
+Use `open_appskyline` with no arguments when the user wants to open the product
+and browse visually. It is a read-only sidebar entrypoint with up to 100 items,
+using the same tenant authorization as the other tools. Selection shares bounded
+entity context with the host; subsequent writes still require their normal approval.
 
 ## Stores
 
@@ -47,32 +54,32 @@ app's id, name, default locale, and per-store ids.
 
 Reading your own data:
 
-| Tool                         | Use it for                                                                        |
-| ---------------------------- | --------------------------------------------------------------------------------- |
-| `list_apps`                  | Every app the signed-in account can access, with per-store ids                    |
-| `get_app`                    | One app's metadata, locales, per-store ids, timestamps                            |
-| `list_keywords`              | Tracked keywords for an app: id, term, language, country, bid                     |
-| `get_keyword_rank`           | Where an app ranks right now for one term in one store + country                  |
-| `get_keyword_history`        | Day-by-day rank timeseries for an app, term, and country                          |
-| `get_store_metadata`         | Synced listing metadata per locale, with Apple keyword-field character counts     |
-| `get_app_engagement_summary` | Downloads, installs, uninstalls, crashes over a date window, plus top territories |
-| `list_google_play_reviews`   | Recent Play reviews: rating, text, version, device, developer-reply state         |
-| `show_app_overview`          | Interactive summary of one app, connected stores, and up to 50 tracked keywords   |
+| Tool                         | Use it when someone asks…                                                                 |
+| ---------------------------- | ----------------------------------------------------------------------------------------- |
+| `list_apps`                  | which apps they track; also resolves the app id the other tools need                      |
+| `get_app`                    | about one app's store ids, locales and timestamps                                         |
+| `list_keywords`              | which keywords they track: id, term, language, country, bid                               |
+| `get_keyword_rank`           | where their app ranks right now for one term in one store and country                     |
+| `get_keyword_history`        | how that rank changed over time, one row per stored search snapshot                       |
+| `get_store_metadata`         | to audit their synced listing text per locale, or whether the latest version is in review |
+| `get_app_engagement_summary` | how many downloads, installs, uninstalls or crashes over a period, plus top countries     |
+| `list_google_play_reviews`   | what Google Play users said in the last 7 days: stars, text, version, reply state         |
+| `show_app_overview`          | for a one-card overview of one app, its stores and up to 50 tracked keywords              |
 
 Reading public or shared data:
 
-| Tool                   | Use it for                                                                |
-| ---------------------- | ------------------------------------------------------------------------- |
-| `search_store_results` | Live ranked search results for a term — the competitive field             |
-| `get_keyword_overview` | Monthly search volume, difficulty, CPC and competition for up to 50 terms |
-| `get_store_listing`    | Any app's public listing by store-native id — competitor research         |
+| Tool                   | Use it when someone asks…                                                        |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| `search_store_results` | which apps rank for a term right now — the competitive field                     |
+| `get_keyword_overview` | how popular terms are: Google web-search volume, difficulty, CPC, up to 50 terms |
+| `get_store_listing`    | about any app's public listing by store-native id — competitor research          |
 
 Writing:
 
-| Tool             | Use it for                                        |
-| ---------------- | ------------------------------------------------- |
-| `add_keyword`    | Start tracking a term. Non-idempotent — see below |
-| `delete_keyword` | Stop tracking a term by keyword id. Idempotent    |
+| Tool             | Use it when someone asks…                                        |
+| ---------------- | ---------------------------------------------------------------- |
+| `add_keyword`    | to start tracking a term, with a country. Non-idempotent — below |
+| `delete_keyword` | to stop tracking a term, by keyword id. Idempotent               |
 
 ## Batch `get_keyword_overview`; never loop it
 
@@ -85,14 +92,20 @@ Always collect the full candidate list first, then make a single call per
 country. Note that `country` is required here and must be exactly two letters,
 unlike most other tools where it is optional.
 
+The volume is Google web-search demand in that country: a proxy for interest
+in a term, not a count of App Store, Google Play or Microsoft Store searches.
+Say so when you report it.
+
 ## Writes need the user's intent, not just their question
 
 `add_keyword` and `delete_keyword` change the user's tracked set.
 
 `add_keyword` is **not idempotent** — adding the same term twice creates two
 rows. Before adding, call `list_keywords` and check the term is not already
-tracked for that language and country. When adding several keywords, show the
-list and get agreement first; do not infer a batch add from a research question.
+tracked for that language and country. Pass a `country` with every new
+keyword: the weekly rank check skips keywords that have none. When adding
+several keywords, show the list and get agreement first; do not infer a batch
+add from a research question.
 
 `delete_keyword` stops future snapshots but leaves historical search data
 intact, so it is recoverable in the sense that past rows survive — but the
@@ -115,7 +128,9 @@ guessing.
 
 A single rank is a point sample of a noisy series. Before calling a change a
 regression or a win, pull `get_keyword_history` for the same term and country
-and look at the trend. Ranks move on their own day to day.
+and look at the trend. Ranks move on their own day to day. History has one row
+per stored search snapshot: tracked keywords are re-checked weekly, plus any
+day the term was searched in AppSkyline, so gaps between rows are normal.
 
 ## A standard ASO report
 
