@@ -5,7 +5,7 @@ license: Apache-2.0
 compatibility: Requires the AppSkyline MCP connector (https://mcp.appskyline.com/mcp) and an AppSkyline account
 metadata:
   author: Appskyline
-  version: '1.0.1'
+  version: '1.1.0'
   repository: https://github.com/appskyline/skills
 ---
 
@@ -30,7 +30,11 @@ Use the exact API store values: `ios-app-store`, `macos-app-store`,
 
 For an app connected to the account:
 
-- Call `get_store_metadata` for its synchronized listing fields.
+- Call `suggest_store_metadata` with its `appId`, `store` and `country`. It
+  returns the listing it analyzed, where each tracked keyword is covered, the
+  stored rank and cached demand behind each opportunity, and drafted fields
+  within the store's limits. Treat the drafts as word placement, not copy.
+- Call `get_store_metadata` for its synchronized listing fields in other locales.
 - Call `list_keywords` for the terms already tracked for that app.
 - Call `get_keyword_rank` for the important terms in the selected store and
   country. Report the scanned depth with every position.
@@ -83,6 +87,8 @@ Return these sections:
 4. `Gaps` — unclear positioning, unused field space, duplication, localization,
    or evidence the listing targets terms that do not match visible results.
 5. `Proposed metadata` — field-by-field copy, preserving each store's limits.
+   Check your final wording with `suggest_store_metadata` and the proposed
+   `title`, `subtitle`, `keywords` or `shortDescription` before presenting it.
 6. `Verification plan` — what to measure after publication and when to compare.
 
 Do not upload or mutate metadata unless the user explicitly requests it after

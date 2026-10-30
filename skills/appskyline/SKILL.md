@@ -1,11 +1,11 @@
 ---
 name: appskyline
-description: Query and manage App Store Optimization data with the `appskyline` CLI — check where an app ranks for a keyword on the iOS App Store, macOS App Store, Google Play or Microsoft Store, list live top-N search results, track keywords, look up monthly search volume and difficulty for keyword ideas, audit and upload App Store Connect listing metadata, and pull Google Play reviews and install reports. Use when asked about app store rankings, keyword research, ASO reports, store-listing metadata, or anything involving the `appskyline` command or app.appskyline.com data.
+description: Query and manage App Store Optimization data with the `appskyline` CLI — check where an app ranks for a keyword on the iOS App Store, macOS App Store, Google Play or Microsoft Store, list live top-N search results, track keywords, look up monthly search volume and difficulty for keyword ideas, get suggested titles, subtitles and keyword fields built from the tracked keywords, audit and upload App Store Connect listing metadata, and pull Google Play reviews and install reports. Use when asked about app store rankings, keyword research, ASO reports, store-listing metadata, or anything involving the `appskyline` command or app.appskyline.com data.
 license: Apache-2.0
 compatibility: Requires Node.js 18+, network access, and an AppSkyline account (https://app.appskyline.com)
 metadata:
   author: Appskyline
-  version: '1.2.0'
+  version: '1.3.0'
   repository: https://github.com/appskyline/skills
 allowed-tools: Bash(appskyline:*) Bash(npx appskyline:*)
 ---
@@ -75,6 +75,7 @@ missing, expired, or wrong: run `appskyline login` (or fix
 | Who occupies the top N for a term          | `appskyline search <store> …`          |
 | The tracked keyword set for an app         | `appskyline keywords list --appId …`   |
 | Search volume / difficulty for term ideas  | `appskyline keywords overview …`       |
+| Which keywords go in title, subtitle, keyword field | `appskyline metadata suggest [appId]` |
 | The store listing text (name, keywords, …) | `appskyline ios-app-store metadata …`  |
 | A competitor's public listing              | `appskyline ios-app-store app <id>` (or the google-play / macos-app-store / microsoft-store equivalent) |
 
@@ -148,6 +149,39 @@ Terms missing from the shared cache trigger billable upstream lookups, so
 never loop this command over single keywords: collect the full candidate list
 first, then make one call per country with up to 100 comma-separated terms.
 Rank without volume is vanity — check volume before recommending a term.
+
+## Suggest title, subtitle and keywords
+
+```bash
+appskyline metadata suggest                       # every app, each in its main market
+appskyline metadata suggest <appId> --store ios-app-store --country ES --json
+appskyline metadata suggest <appId> --store ios-app-store --country ES \
+  --title "Mus Online Village: Órdago" --subtitle "Baraja española con amigos" \
+  --keywords "cartas,españolas,juego"             # check your own wording
+```
+
+`appskyline metadata suggest` compares each store listing with the app's
+tracked keywords in one market (by default the country holding most of
+them) and drafts the fields the store indexes: the App Store app name,
+subtitle and 100-character keyword field, the Google Play title (its short
+description gets the phrases to work in, never a keyword list), and Microsoft
+Store search terms. Every keyword comes back with where the listing covers it
+(`title`, `subtitle`, `combined` across fields, `partial`, `missing`, …), its
+latest stored rank and cached Google demand, and a priority. The listing is
+the synced metadata when the store account is connected, otherwise the live
+public listing in that country, whose App Store keyword field is private.
+
+Drafts already fit the store limits but place words rather than write copy:
+rewrite a list-like draft naturally, keep the brand, then check the wording
+with `--title`, `--subtitle`, `--keywords` or `--short-description`, which
+report the tracked keywords gained and lost. On the App Store a word counts
+once across the three fields: never repeat one, and separate keywords with
+bare commas. `competitorWords` are words other apps put in their titles; keep
+one only when it describes your app, and never use a brand. Demand is read
+from the shared cache; `--refresh-demand` fetches stale terms and may spend
+DataForSEO credits. Without an appId, listings not reached in time come back
+`deferred` and the command exits 1: run it again with that appId. Nothing is
+written to any store.
 
 ## Store-listing metadata (App Store Connect)
 

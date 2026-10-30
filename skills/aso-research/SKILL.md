@@ -1,11 +1,11 @@
 ---
 name: aso-research
-description: Research and improve an app's App Store Optimization standing using AppSkyline — keyword ranks and history across the iOS App Store, macOS App Store, Google Play and Microsoft Store, search-volume and difficulty lookups, store-listing metadata audits against Apple's character limits, competitor listings, and engagement/review signals. Use when asked for an ASO report, to check where an app ranks for a keyword, to find keywords worth targeting, to audit or improve store metadata, or to compare an app against competitors.
+description: Research and improve an app's App Store Optimization standing using AppSkyline — keyword ranks and history across the iOS App Store, macOS App Store, Google Play and Microsoft Store, search-volume and difficulty lookups, suggested titles, subtitles and keyword fields built from the tracked keywords, store-listing metadata audits against Apple's character limits, competitor listings, and engagement/review signals. Use when asked for an ASO report, to check where an app ranks for a keyword, to find keywords worth targeting, which keywords to put in a title or subtitle, to audit or improve store metadata, or to compare an app against competitors.
 license: Apache-2.0
 compatibility: Requires the AppSkyline MCP connector (https://mcp.appskyline.com/mcp) and an AppSkyline account with at least one tracked app
 metadata:
   author: Appskyline
-  version: '1.1.1'
+  version: '1.2.0'
   repository: https://github.com/appskyline/skills
 ---
 
@@ -62,6 +62,7 @@ Reading your own data:
 | `get_keyword_rank`           | where their app ranks right now for one term in one store and country                     |
 | `get_keyword_history`        | how that rank changed over time, one row per stored search snapshot                       |
 | `get_store_metadata`         | to audit their synced listing text per locale, or whether the latest version is in review |
+| `suggest_store_metadata`     | which keywords to put in a title, subtitle, keyword field or short description, per app   |
 | `get_app_engagement_summary` | how many downloads, installs, uninstalls or crashes over a period, plus top countries     |
 | `list_google_play_reviews`   | what Google Play users said in the last 7 days: stars, text, version, reply state         |
 | `show_app_overview`          | for a one-card overview of one app, its stores and up to 50 tracked keywords              |
@@ -113,6 +114,40 @@ tracking gap it creates is not backfillable. Confirm before deleting, and use
 `list_keywords` to map a term the user named to its keyword id rather than
 guessing.
 
+## Suggesting title, subtitle and keywords
+
+When someone asks which keywords to put in their title or subtitle, what to
+change in a listing, or how to improve their metadata, call
+`suggest_store_metadata` before answering, and answer with concrete text for
+each app rather than a method. Without `appId` one call covers every app,
+each in its main market, so it also answers "for each app". Each result
+compares the listing with the app's tracked keywords in that market: the
+current fields, drafts that already fit the store limits (App Store app name,
+subtitle and keyword field; Google Play title, plus the phrases its short
+description should mention; Microsoft Store search terms), how many tracked
+keywords are covered now and after the drafts, the top opportunities with
+their stored rank and cached Google demand, and issues.
+
+The drafts place words; they are not finished copy. Rewrite a draft that
+reads like a list into natural text in the listing's language and keep the
+brand, then call `suggest_store_metadata` again with `appId`, `store` and
+your proposed `title`, `subtitle`, `keywords` or `shortDescription`: the check
+reports the tracked keywords gained and lost and any limit it breaks. Show
+only wording that passes.
+
+- On the App Store a word counts once across the app name, subtitle and
+  keyword field. Never repeat one, and separate keywords with bare commas.
+- On Google Play, work the phrases into a readable short description; never
+  stuff keywords.
+- `competitorWords` are words other apps put in their titles. Suggest one only
+  when it describes the user's app, and never a brand or another app's name.
+- Demand comes from the shared cache. When the top opportunities have none,
+  call `get_keyword_overview` once for those terms in that market, then
+  suggest again.
+- Status `listing-unavailable` means the app is not live in that storefront,
+  `no-tracked-keywords` means the app needs tracked keywords first, and
+  `deferred` means ask again for that app alone.
+
 ## Reading rank results correctly
 
 `get_keyword_rank` returns a `status` that must drive your wording:
@@ -145,9 +180,10 @@ When asked for an ASO report on an app, work in this order:
 5. `get_keyword_overview` — **one batched call** per country over every term
    from steps 2–4 plus any candidates you are considering, to learn which terms
    are worth the effort at all.
-6. `get_store_metadata` → audit titles, subtitles and the keyword field per
-   locale. On Apple, check the reported character count against the
-   100-character limit; unused characters there are wasted ranking surface.
+6. `suggest_store_metadata` → audit titles, subtitles and the keyword field
+   against the tracked keywords and get drafts within each store's limits;
+   `get_store_metadata` adds every other synced locale. On Apple, unused
+   keyword-field characters are wasted ranking surface.
 7. `search_store_results` on the top few terms → who actually occupies the
    results, and `get_store_listing` on any competitor worth understanding.
 
